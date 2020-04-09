@@ -30,3 +30,5 @@ npm install ytdl-core<br/>
 <p>Бомбанул и выложил и шо</p>
 
 <p>Форканул Влад</p>
+
+**Оригинал - https://github.com/sadl33t/discordjs-botnet **
