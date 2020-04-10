@@ -1,24 +1,10 @@
+const prompts = require('prompts');
 const Discord = require("discord.js");
 const fs=require("fs");
 const ytdl = require('ytdl-core');
 const tokens = require('./token.json');
+const fetch = require('node-fetch');
 
-
-let prev;
-console.log(`
-
-
-
-
-============================================
-`)
-
-const XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest
-const readline = require('readline');
-const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout
-});
 
 
 let Bot = function(token){
@@ -27,18 +13,15 @@ let Bot = function(token){
     console.log(token + ` не смог залогиниться`);
 	console.log("удали их из списка бот не будет работать");
   });
-    
+  
     let idvoice = "";
     let music_bot = false;
-
-    
-    
+	
     client.on("ready", () => {
     
         console.log(`Bot  ${client.user.username} is ready! (${client.guilds.size} servers)`);
         client.user.setActivity('Raid: Shadow Legends', { type: 'PLAYING' });
     });
-
 
     this.getClient = () => {return client};
 	
@@ -49,32 +32,32 @@ let Bot = function(token){
     channel.join()
     console.log(`Bot  ${client.user.username} - Вошёл успешно.`);
         } catch (err) {
-        console.log(`Bot  ${client.user.username} - Не смог войти.`);
+        console.log(`Bot  ${client.user.username} - Не смог войти. - ${err}`);
         }
     }
-
-    
-    this.sendChannel = function(chnid, message_content) {
-        
-            try {
-    
+	
+    this.sendChannel = function(chnid, message_content) {       
+            try {  
     client.channels.get(chnid).send(message_content);
     console.log(`Bot  ${client.user.username} - Отправил успешно.`);
         } catch (err) {
         console.log(`Bot  ${client.user.username} - Не смог отправить.` + err);
         }
     }
-    this.joinServer = function(key) {
-        try {
-        var xhr = new XMLHttpRequest()
-
-            xhr.open("POST", `https://discordapp.com/api/v6/invites/${key}?token=${token}`, true)
-            xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8")
-            xhr.send()
-        console.log(`Bot  ${client.user.username} - Вошёл успешно.`);
-        } catch (err) {
-        console.log(`Bot  ${client.user.username} - Не смог войти. - ${err}`);
-        }
+    this.joinServer = function(key) {	
+		fetch(`https://discordapp.com/api/v6/invites/${key}?token=${token}`, {
+        method: 'post',
+        headers: { 'Content-Type': 'application/json' },
+    })
+    .then(res => res.json())
+    .then(json => {
+		if(json.code == 40002){
+			console.log(`Bot  ${client.user.username} - Не смог войти.`)
+		} else {
+			console.log(`Bot  ${client.user.username} - Заебись вошёл.`)
+		}
+	});
+		
     }
     let dispatcher;
     this.audioplay = async function (url_yt) {
@@ -89,25 +72,20 @@ let Bot = function(token){
             }
             if(music_bot == false){ console.log(`Bot  ${client.user.username} - Модуль отключен`);}
     }
-
-    this.audioplay_file = async function (file_music) {
-    if(music_bot == true){   
-
-    let channel = client.channels.get(idvoice);
-    await channel.join()
-    .then(connection => {
-                dispatcher = connection.playFile(file_music);
-    });
-    console.log(file_music)
-    console.log(`Bot  ${client.user.username} - играю музыку.`)
-            }
-            if(music_bot == false){ console.log(`Bot  ${client.user.username} - Модуль отключен`);}
-    }
     this.audiostop =  function () {
         
         if(dispatcher) dispatcher.end();
 
     }
+	this.status_set =  function (status_text) {
+	if(!status_text){
+	 console.log("хуета нету ничего")
+	 return
+	 }
+     client.user.setActivity(status_text,{type: 'WATCHING'});
+
+    }
+
     this.setVolume = function(volume) {
 		if(music_bot == true){
         if(dispatcher) dispatcher.setVolumeLogarithmic(volume);
@@ -147,162 +125,176 @@ let Bot = function(token){
             console.log(`${client.user.tag} > не смог ливнуть`)
         });
     }
+
+    this.botReact = async function(cid, mid, react) {
+      let channel = client.channels.get(cid);
+      if(!cid) return console.log(`${client.user.name} > Нет канала`);
+      let message = await channel.fetchMessage(mid);
+      await message.react(react).then(async () => console.log(`${client.user.username} > Поставил реакцию`)).catch(e => {console.log(`${client.user.username} > Не могу поставить реакцию (${e})`)})
+    }
 }
 
-
-
-rl.on('line', (input, args) => {
-    let inputs = input.split(' ');
-    if(inputs[0] !== '!!') prev = inputs;
-    if(inputs[0] == '!!') {
-        inputs = prev;
+let bots = [];
+ 
+async function bot_s() {
+  const response = await prompts([
+    {
+      type: 'select',
+      name: 'text',
+      message: 'Выбери действие',
+      choices: [
+        { title: 'Music off/on', value: 'music' },
+    { title: 'Voice join', value: 'voice_join' },
+    { title: 'React', value: 'react' },
+		{ title: 'Play music [YouTube]', value: 'play_music' },
+		{ title: 'Volume music [YouTube]', value: 'music_volume' },
+		{ title: 'Stop music [YouTube]', value: 'music_stop' },
+        { title: 'Join server', value: 'join_server' },
+		{ title: 'Send message', value: 'send_chat' },
+		{ title: 'Set status', value: 'set_status' },
+        { title: 'Leave server', value: 'leave_server' }
+      ],
     }
-    prev = inputs;
-    let chnid;
-    let botid;
-    let url_yt;
-    let gid;
-    let message_content;
-    switch (inputs[0].toUpperCase()) {
-        case "CLEAR_SERVERS":
-            bots.forEach((bot) => {
-                bot.clearServers();
-            })
-            break;
+  ]);
+  
 
-        case "JOIN":
-        case "JOIN_SERVER":
-            let key = inputs[1];
-            let delay_join = 1000;
-            bots.forEach((bot)=>{
-                
-                setTimeout(function(){
-               bot.joinServer(key);
-               }, delay_join);
-            });
-        break;
-        case "MUSIC_TURN+1":
-            botid = inputs[1];
-            try {
-                bots[botid].music_turn();
-            } catch(err) {
-                console.log("Ошибка");
-            }
-            break;
-        case "VOL":
-        case "V":
-        case "VOLUME":
-            bots.forEach((bot)=>{
-                bot.setVolume(inputs[1]);
-           });
-           break;
-        case "MUSIC_STATS":
-        case "MSTATS":
-            bots.forEach((bot)=>{
-                bot.music_status();
-           });
-           break;
 
-        case "MUSIC_TURN":
-            bots.forEach((bot)=>{
+
+switch (response.text) {
+  case "music": //модуль музыки
+  await  bots.forEach((bot)=>{
                 bot.music_turn();
            });
-           break;
-
-        case "VC":
-        case "VOICE":
-            chnid = inputs[1];
-            bots.forEach((bot)=>{
-               bot.joinChannel(chnid);
-               
-            });
-            break;
-        case "VOICE+1":
-            chnid = inputs[1];
-            botid = inputs[2];
-           try {
-               bots[botid].joinChannel(chnid);
-           } catch(err) {
-               console.log("Ошибка");
-           }
-           break;
-        case "PLAY":
-            url_yt = inputs[1];
-            bots.forEach((bot)=>{
-               bot.audioplay(url_yt);
-    
-            });
-            break;
-        case "PLAY_FILE":
-            url_yt = inputs[1];
-            let file_music = "";
-
-            for(let i = 0; i < inputs.length; i++) {
-                if(i > 1) {
-                    file_music += `${inputs[i]} `;
-                }   
-            }
-            bots.forEach((bot)=>{bot.audioplay_file(file_music);});
-            break;
-        case "STOP":
-            bots.forEach((bot)=>{
-                bot.audiostop();
-     
-             });
-            break;
-
-        case "SEND":
-             chnid = inputs[1];
-             message_content = "";
-
-            for(let i = 0; i < inputs.length; i++) {
-                if(i > 1) {
-                    message_content += `${inputs[i]} `;
-                }
-            }
-            bots.forEach((bot)=>{bot.sendChannel(chnid, message_content);});
-            break;
-        case "SEND+1":
-             chnid = inputs[1];
-            message_content = "";
-
-            for(let i = 1; i < inputs.length; i++) {
-                if(i > 2) {
-                    message_content += `${inputs[i]} `;
-                }
-            }
-            botid = inputs[2];
-            bots[botid].sendChannel(chnid, message_content);
-
-
-            break;
-
-        case "LEAVE":
-            gid = inputs[1];
-            bots.forEach((bot)=>{
-                bot.botLeave(gid);
-
-             });
-            break;
-        default:
-            console.log("Unknown command...")
-            break;
+		   bot_s();
+    break;
+	  case "voice_join": //завалиться в голосовой
+	      const voice_id = await prompts([
+        {
+      type: 'text',
+      name: 'voice_id',
+      message: `Please write voice id.`
     }
-	
+  ]);
+         await   bots.forEach((bot)=>{
+               bot.joinChannel(voice_id.voice_id);         
+            });
+			bot_s();
+			
+    break;	
+	  case "play_music": //вьебать мызыку АУФ
+	     const youtube_url = await prompts([
+        {
+      type: 'text',
+      name: 'url',
+      message: `Please write youtube url.`
+    }
+  ]);        
+       await     bots.forEach((bot)=>{
+               bot.audioplay(youtube_url.url);
+            });
+			bot_s();
+    break;
+  case "join_server": //завалиться на сервер
+   const invite_code = await prompts([
+        {
+      type: 'text',
+      name: 'invite_code',
+      message: `Please write invite code.`
+    }
+  ]);
+          await  bots.forEach((bot, i)=>{
+                setTimeout(function(){
+               bot.joinServer(invite_code.invite_code);
+               }, i * 150);
+            });
+			bot_s();
+    break;
+  case "leave_server": //сьебать с сервера
+    const guild_id = await prompts([
+        {
+      type: 'text',
+      name: 'guild_id',
+      message: `Please write guild id.`
+    }
+  ]);
+          await  bots.forEach((bot)=>{
+                bot.botLeave(guild_id.guild_id);
+             });
+			 bot_s();
+    break;
+      case "music_stop": //остановить вечеринку
+              await   bots.forEach((bot)=>{
+                      bot.audiostop();
+                  });
+            bot_s();
+                  break;
+      case "music_volume": //увеличить/уменьшить бассы
+          const music_volume = await prompts([
+              {
+            type: 'text',
+            name: 'music_volume',
+            message: `Please write volume.`
+          }
+        ]);
+                await  bots.forEach((bot)=>{
+                  bot.setVolume(music_volume.music_volume);
+                });
+            bot_s();
+                break;	
+      case "send_chat": //отправка говна в чат
+      const text_send = await prompts([
+              {
+            type: 'text',
+            name: 'ch_id',
+            message: `Please write channel text id.`
+          },
+                {
+            type: 'text',
+            name: 'text',
+            message: `Please write text for send.`
+          }
+        ]);
+                await  bots.forEach((bot)=>{bot.sendChannel(text_send.ch_id, text_send.text);});
+            bot_s();
+                  break; 
+      case "set_status":
+      const status_text = await prompts([
+              {
+            type: 'text',
+            name: 'govno_html',
+            message: `Please write status text .`
+          }
+        ]);
+      await bots.forEach((bot)=>{bot.status_set(status_text.govno_html);});
+            bot_s();
+      break;			
+      case "react":
+        const reactions = await prompts([
+          {
+        type: 'text',
+        name: 'ch_id',
+        message: `Please write channel text id.`
+      },
+            {
+        type: 'text',
+        name: 'mid',
+        message: `Please write message id.`
+      },
+      {
+        type: 'text',
+        name: 'reaction',
+        message: 'Please write reaction to react.'
+      }
+    ]);
+    await bots.forEach(async (bot)=>{ await bot.botReact(reactions['ch_id'], reactions['mid'], reactions['reaction']);});
+    bot_s();
 
-		
-	});
-
-let bots = [];
-tokens.forEach(token=> {
+}
+}
+async function bot_add() {
+await tokens.forEach(token=> {
 bots.push(new Bot(token));
 });
-
-
-
-
-	
-	
-	
-	
-	
+bot_s();
+}
+bot_add()

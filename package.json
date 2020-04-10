@@ -1,7 +1,7 @@
 {
-  "name": "thebestshadow.aspire-world.pw",
+  "name": "xui",
   "version": "1.0.0",
-  "description": "My botnet",
+  "description": "",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -9,11 +9,11 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "discord.js": "^11.5.1",
+    "discord.js": "^11.6.4",
     "fs": "0.0.1-security",
-    "hddserial": "0.0.7",
+    "node-fetch": "^2.6.0",
     "node-opus": "^0.3.3",
-    "xmlhttprequest": "^1.8.0",
-    "ytdl-core": "^1.0.3"
+    "prompts": "^2.3.2",
+    "ytdl-core": "^2.0.1"
   }
 }
