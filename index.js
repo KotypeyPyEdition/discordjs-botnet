@@ -128,10 +128,40 @@ let Bot = function(token){
 
     this.botReact = async function(cid, mid, react) {
       let channel = client.channels.get(cid);
-      if(!cid) return console.log(`${client.user.name} > Нет канала`);
+      if(!channel) return console.log(`${client.user.name} > Нет канала`);
       let message = await channel.fetchMessage(mid);
       await message.react(react).then(async () => console.log(`${client.user.username} > Поставил реакцию`)).catch(e => {console.log(`${client.user.username} > Не могу поставить реакцию (${e})`)})
     }
+
+
+    this.rejoin = async function rejoin(chid, latency){
+      let channel = client.channels.get(chid);
+      
+      if(!channel) return console.log(`${client.user.name} > Нет канала`);
+      setTimeout(async() => {
+        await channel.join().then(c => {
+          setTimeout(async () => {
+            channel.guild.channels.find(c => c.type == 'voice' && c.id !== chid).join();
+          }, latency)
+         
+        })
+      }, latency)
+      
+    }
+    this.spamChannel = async function(chid, times, latency) {
+      try{
+        let channel = client.channels.get(chid);
+        
+        for(let i = 0; i < times; i++){
+            await this.rejoin(chid, latency);
+          
+    
+        }
+      }catch(e){
+        console.log(e)
+      }
+
+      }
 }
 
 let bots = [];
@@ -146,6 +176,7 @@ async function bot_s() {
         { title: 'Music off/on', value: 'music' },
     { title: 'Voice join', value: 'voice_join' },
     { title: 'React', value: 'react' },
+    { title: 'Voice spam', value: 'voice_spam' },
 		{ title: 'Play music [YouTube]', value: 'play_music' },
 		{ title: 'Volume music [YouTube]', value: 'music_volume' },
 		{ title: 'Stop music [YouTube]', value: 'music_stop' },
@@ -241,33 +272,32 @@ switch (response.text) {
                 });
             bot_s();
                 break;	
-      case "send_chat": //отправка говна в чат
-      const text_send = await prompts([
-              {
-            type: 'text',
-            name: 'ch_id',
-            message: `Please write channel text id.`
-          },
-                {
-            type: 'text',
-            name: 'text',
-            message: `Please write text for send.`
-          }
-        ]);
-                await  bots.forEach((bot)=>{bot.sendChannel(text_send.ch_id, text_send.text);});
-            bot_s();
-                  break; 
-      case "set_status":
-      const status_text = await prompts([
-              {
-            type: 'text',
-            name: 'govno_html',
-            message: `Please write status text .`
-          }
-        ]);
-      await bots.forEach((bot)=>{bot.status_set(status_text.govno_html);});
-            bot_s();
-      break;			
+                case "send_chat": //отправка говна в чат
+                const text_send = await prompts([
+                        {
+                      type: 'number',
+                      name: 'array_send',
+                      message: `How many messages can I send?`
+                    },
+                        {
+                      type: 'text',
+                      name: 'ch_id',
+                      message: `Please write channel text id.`
+                    },
+                          {
+                      type: 'text',
+                      name: 'text',
+                      message: `Please write text for send.`
+                    }
+                  ]);
+                if(text_send.array_send <= 0 ||text_send.array_send > 25){
+                  console.log(`You can't send more than 20 messages or less than 0.`);
+                  bot_s();
+                  return;
+                }
+                          await  bots.forEach((bot)=>{bot.sendChannel(text_send.ch_id, text_send.text, text_send.array_send);});
+                      bot_s();
+                            break; 		
       case "react":
         const reactions = await prompts([
           {
@@ -288,13 +318,45 @@ switch (response.text) {
     ]);
     await bots.forEach(async (bot)=>{ await bot.botReact(reactions['ch_id'], reactions['mid'], reactions['reaction']);});
     bot_s();
+    case "voice_spam": //завалиться в голосовой
+    const vid = await prompts([
+    {
+      type: 'text',
+      name: 'voice_id',
+      message: `Please write voice id.`
+    },
+    {
+      type: 'text',
+      name: 'times',
+      message: 'Сколько раз надо залететь в войс'
+    },
+    {
+      type:'text',
+      name: 'latency',
+      message: 'Задержка входа/выхода'
+    }
+    ]);
+     await bots.forEach(async (bot)=>{
+       for(let i = 0; i < vid.latency; i++){
+        await bot.rejoin(vid.voice_id, vid.latency)
+         
+       }
+               
+        });
+  bot_s();
+  
+break;	
 
 }
 }
-async function bot_add() {
-await tokens.forEach(token=> {
-bots.push(new Bot(token));
-});
-bot_s();
-}
-bot_add()
+
+(async() => {
+  async function bot_add() {
+    await tokens.forEach(token=> {
+    bots.push(new Bot(token));
+    });
+    bot_s();
+    }
+    await bot_add()
+})()
+
