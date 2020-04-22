@@ -2,7 +2,6 @@ const prompts = require('prompts');
 const Discord = require("discord.js");
 const fs=require("fs");
 const ytdl = require('ytdl-core');
-const tokens = require('./token.json');
 const fetch = require('node-fetch');
 
 
@@ -25,7 +24,7 @@ let Bot = function(token){
 
     this.getClient = () => {return client};
 	
-        this.joinChannel = function(chnid) {
+    this.joinChannel = function(chnid) {
             idvoice = chnid;
             try {
     let channel = client.channels.get(chnid);
@@ -35,6 +34,18 @@ let Bot = function(token){
         console.log(`Bot  ${client.user.username} - Не смог войти. - ${err}`);
         }
     }
+
+    this.leaveChannel = function(chnid) {
+      idvoice = chnid;
+            try {
+      let channel = client.channels.get(chnid);
+      if(!channel) return console.log(`${client.user.tag} >> нет канала`)
+      channel.leave()
+      console.log(`Bot  ${client.user.username} - Вышел успешно.`);
+        } catch (err) {
+        console.log(`Bot  ${client.user.username} - Не смог Выйти. - ${err}`);
+        }
+      }
 	
     this.sendChannel = function(chnid, message_content) {       
             try {  
@@ -114,6 +125,7 @@ let Bot = function(token){
             }, 1000)         
         })
     }
+    
 
     this.botLeave = function(gid){
         let guild = client.guilds.get(gid.toString());
@@ -318,45 +330,36 @@ switch (response.text) {
     ]);
     await bots.forEach(async (bot)=>{ await bot.botReact(reactions['ch_id'], reactions['mid'], reactions['reaction']);});
     bot_s();
-    case "voice_spam": //завалиться в голосовой
-    const vid = await prompts([
-    {
+
+    case "voice_leave": //завалиться в голосовой
+	      const voice_id = await prompts([
+        {
       type: 'text',
       name: 'voice_id',
       message: `Please write voice id.`
-    },
-    {
-      type: 'text',
-      name: 'times',
-      message: 'Сколько раз надо залететь в войс'
-    },
-    {
-      type:'text',
-      name: 'latency',
-      message: 'Задержка входа/выхода'
     }
-    ]);
-     await bots.forEach(async (bot)=>{
-       for(let i = 0; i < vid.latency; i++){
-        await bot.rejoin(vid.voice_id, vid.latency)
-         
-       }
-               
-        });
-  bot_s();
-  
-break;	
+  ]);
+         await   bots.forEach((bot)=>{
+               bot.leaveChannel(voice_id.voice_id);         
+            });
+			bot_s();
+			
+    break;	
+
 
 }
 }
 
-(async() => {
-  async function bot_add() {
-    await tokens.forEach(token=> {
-    bots.push(new Bot(token));
-    });
-    bot_s();
-    }
-    await bot_add()
-})()
-
+async function bot_add() {
+	fs.readFile('token.txt', 'utf8', async function(err, data)  {
+	const tokens2 = data.toString().split('\n');
+	const tokens = tokens2.toString().split('\r,');
+bot_arr = tokens.length;
+await tokens.forEach( async (token, i)=>  {
+  if(token == '' || token == ' ') return;
+await bots.push(new Bot(token));
+});
+});
+}
+bot_add();
+bot_s();
