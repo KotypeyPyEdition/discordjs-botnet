@@ -332,7 +332,7 @@ switch (response.text) {
     bot_s();
 
     case "voice_leave": //завалиться в голосовой
-	      const voice_id = await prompts([
+	      const leave_id = await prompts([
         {
       type: 'text',
       name: 'voice_id',
@@ -340,7 +340,7 @@ switch (response.text) {
     }
   ]);
          await   bots.forEach((bot)=>{
-               bot.leaveChannel(voice_id.voice_id);         
+               bot.leaveChannel(leave_id.voice_id);         
             });
 			bot_s();
 			
