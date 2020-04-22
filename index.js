@@ -187,8 +187,8 @@ async function bot_s() {
       choices: [
         { title: 'Music off/on', value: 'music' },
     { title: 'Voice join', value: 'voice_join' },
+    { title: 'Voice leave', value: 'voice_leave' },
     { title: 'React', value: 'react' },
-    { title: 'Voice spam', value: 'voice_spam' },
 		{ title: 'Play music [YouTube]', value: 'play_music' },
 		{ title: 'Volume music [YouTube]', value: 'music_volume' },
 		{ title: 'Stop music [YouTube]', value: 'music_stop' },
