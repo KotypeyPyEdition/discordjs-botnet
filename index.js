@@ -3,8 +3,16 @@ const Discord = require("discord.js");
 const fs=require("fs");
 const ytdl = require('ytdl-core');
 const fetch = require('node-fetch');
+const games = require('./games.json');
 
+function randomGame(){
 
+  return games[Math.floor(Math.random() * games.length)];
+}
+
+function randomTimeStamp(){
+  return Date.now() - (Math.floor(Math.random() * 300000) + 1);
+}
 
 let Bot = function(token){
     let client = new Discord.Client();
@@ -19,7 +27,7 @@ let Bot = function(token){
     client.on("ready", () => {
     
         console.log(`Bot  ${client.user.username} is ready! (${client.guilds.size} servers)`);
-        client.user.setActivity('Raid: Shadow Legends', { type: 'PLAYING' });
+        client.user.setActivity(randomGame(), { type: 'PLAYING', timestamps: randomTimeStamp()});
     });
 
     this.getClient = () => {return client};
@@ -35,12 +43,16 @@ let Bot = function(token){
         }
     }
 
-    this.leaveChannel = function(chnid) {
+    this.leaveChannel = function(chnid, latency) {
       idvoice = chnid;
             try {
       let channel = client.channels.get(chnid);
       if(!channel) return console.log(`${client.user.tag} >> нет канала`)
-      channel.leave()
+      setTimeout(async () => {
+        channel.leave();
+      }, latency)
+
+      
       console.log(`Bot  ${client.user.username} - Вышел успешно.`);
         } catch (err) {
         console.log(`Bot  ${client.user.username} - Не смог Выйти. - ${err}`);
@@ -337,10 +349,16 @@ switch (response.text) {
       type: 'text',
       name: 'voice_id',
       message: `Please write voice id.`
+    },
+    {
+      type: 'text',
+      name: 'latency',
+      message: 'Enter latency (by defaults 500ms)'
     }
   ]);
+  if(!leave_id.latency || leave_id.latency == '') leave_id.latency = 500;
          await   bots.forEach((bot)=>{
-               bot.leaveChannel(leave_id.voice_id);         
+               bot.leaveChannel(leave_id.voice_id, leave_id.latency);         
             });
 			bot_s();
 			
