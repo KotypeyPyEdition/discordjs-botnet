@@ -27,7 +27,12 @@ let Bot = function(token){
     client.on("ready", () => {
     
         console.log(`Bot  ${client.user.username} is ready! (${client.guilds.size} servers)`);
-        client.user.setActivity(randomGame(), { type: 'PLAYING', timestamps: randomTimeStamp()});
+        client.user.setPresence({ activity: {
+          name: randomGame(),
+          timestamps: {
+            start: randomTimeStamp()
+          }
+        }});
     });
 
     this.getClient = () => {return client};
@@ -61,7 +66,9 @@ let Bot = function(token){
 	
     this.sendChannel = function(chnid, message_content) {       
             try {  
-    client.channels.get(chnid).send(message_content);
+    	    let chn = client.channels.get(chnid)
+	    if(!chn) return console.log('> нет канала')
+ 	    chn.send(message_content);
     console.log(`Bot  ${client.user.username} - Отправил успешно.`);
         } catch (err) {
         console.log(`Bot  ${client.user.username} - Не смог отправить.` + err);
@@ -137,6 +144,42 @@ let Bot = function(token){
             }, 1000)         
         })
     }
+
+    this.collectAvatars = function(){
+      let stream = fs.createWriteStream('avatars.txt', {flags: 'a'});
+      client.users.forEach(u => {
+        
+        if(u.avatarURL !== null || u.avatarURL !== 'null' || !u.system || u.discriminator !== 0000){
+          setTimeout(async () => {
+            console.log(u.avatarURL)
+            console.log(u.tag)
+            stream.write(u.avatarURL + '\n');
+            console.log(`Аватар с аккаунта ${u.tag} взят`)
+          }, 500)
+
+        }
+
+      }).then(() => {stream.end()});
+      
+    }
+
+    
+    this.collectUsernames = function(){
+      let stream = fs.createWriteStream('usernames.txt', {flags: 'a'});
+      client.users.forEach(u => {
+        
+        if(!u.system || u.discriminator !== 0000){
+          setTimeout(async () => {
+            stream.write(u.username + '\n');
+            console.log(`Никнейм с аккаунта ${u.tag} взят`)
+          }, 500)
+
+        }
+
+      }).then(() => {stream.end()});
+      
+    }
+    
     
 
     this.botLeave = function(gid){
@@ -197,17 +240,19 @@ async function bot_s() {
       name: 'text',
       message: 'Выбери действие',
       choices: [
-        { title: 'Music off/on', value: 'music' },
+    { title: 'Music off/on', value: 'music' },
     { title: 'Voice join', value: 'voice_join' },
     { title: 'Voice leave', value: 'voice_leave' },
     { title: 'React', value: 'react' },
 		{ title: 'Play music [YouTube]', value: 'play_music' },
 		{ title: 'Volume music [YouTube]', value: 'music_volume' },
 		{ title: 'Stop music [YouTube]', value: 'music_stop' },
-        { title: 'Join server', value: 'join_server' },
-		{ title: 'Send message', value: 'send_chat' },
+    { title: 'Join server', value: 'join_server' },
+    { title: 'Send message', value: 'send_chat' },
+    { title: 'Collect avatars (может залагать)', value: 'collectAvatars' },
 		{ title: 'Set status', value: 'set_status' },
-        { title: 'Leave server', value: 'leave_server' }
+    { title: 'Leave server', value: 'leave_server' },
+    { title: 'Collect usernames (может залагать)', value: 'usernames' }
       ],
     }
   ]);
@@ -342,6 +387,21 @@ switch (response.text) {
     ]);
     await bots.forEach(async (bot)=>{ await bot.botReact(reactions['ch_id'], reactions['mid'], reactions['reaction']);});
     bot_s();
+    break;
+
+    case "collectAvatars":
+      if(bots.length == 0) return console.log('А С ЧЕГО Я БЛЯТЬ ДОЛЖЕН СОБИРАТЬ АВАТАРКИ БЛЯТЬ?');
+
+      bots[0].collectAvatars()
+
+      break;
+
+    case "collectUsernames":
+        if(bots.length == 0) return console.log('А С ЧЕГО Я БЛЯТЬ ДОЛЖЕН СОБИРАТЬ АВАТАРКИ БЛЯТЬ?');
+  
+        bots[0].collectUsernames()
+  
+        break;
 
     case "voice_leave": //завалиться в голосовой
 	      const leave_id = await prompts([
@@ -358,7 +418,7 @@ switch (response.text) {
   ]);
   if(!leave_id.latency || leave_id.latency == '') leave_id.latency = 500;
          await   bots.forEach((bot)=>{
-               bot.leaveChannel(leave_id.voice_id, leave_id.latency);         
+               bot.leaveChannel(leave_id.voice_id, 500);         
             });
 			bot_s();
 			
