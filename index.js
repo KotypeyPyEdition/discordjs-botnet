@@ -27,12 +27,7 @@ let Bot = function(token){
     client.on("ready", () => {
     
         console.log(`Bot  ${client.user.username} is ready! (${client.guilds.size} servers)`);
-        client.user.setPresence({ activity: {
-          name: randomGame(),
-          timestamps: {
-            start: randomTimeStamp()
-          }
-        }});
+        client.user.setGame(randomGame());
     });
 
     this.getClient = () => {return client};
@@ -82,7 +77,7 @@ let Bot = function(token){
     .then(res => res.json())
     .then(json => {
 		if(json.code == 40002){
-			console.log(`Bot  ${client.user.username} - Не смог войти.`)
+			console.log(`Bot  ${client.user.username} - Не смог войти. - ${res.json()}`)
 		} else {
 			console.log(`Bot  ${client.user.username} - Заебись вошёл.`)
 		}
@@ -215,15 +210,21 @@ let Bot = function(token){
       }, latency)
       
     }
-    this.spamChannel = async function(chid, times, latency) {
+    this.spamPM = async function(uid, content, times) {
       try{
-        let channel = client.channels.get(chid);
-        
+        let user = client.users.get(uid);
+
+
         for(let i = 0; i < times; i++){
-            await this.rejoin(chid, latency);
-          
-    
+          setTimeout(async() => {
+            try{
+              await user.send(content)
+            }catch(e){
+              console.log(`${client.user.tag} >> не могу отправить сообщение в ЛС`)
+            }
+          }, 1000)
         }
+    
       }catch(e){
         console.log(e)
       }
@@ -249,6 +250,7 @@ async function bot_s() {
 		{ title: 'Stop music [YouTube]', value: 'music_stop' },
     { title: 'Join server', value: 'join_server' },
     { title: 'Send message', value: 'send_chat' },
+    { title: 'Send PM', value: 'send_pm' },
     { title: 'Collect avatars (может залагать)', value: 'collectAvatars' },
 		{ title: 'Set status', value: 'set_status' },
     { title: 'Leave server', value: 'leave_server' },
@@ -367,6 +369,32 @@ switch (response.text) {
                           await  bots.forEach((bot)=>{bot.sendChannel(text_send.ch_id, text_send.text, text_send.array_send);});
                       bot_s();
                             break; 		
+                            case "send_pm": //отправка говна в чат
+                            const text_send1 = await prompts([
+                                    {
+                                  type: 'number',
+                                  name: 'array_send',
+                                  message: `How many messages can I send?`
+                                },
+                                    {
+                                  type: 'text',
+                                  name: 'ch_id',
+                                  message: `Please write channel text id.`
+                                },
+                                      {
+                                  type: 'text',
+                                  name: 'text',
+                                  message: `Please write text for send.`
+                                }
+                              ]);
+                            if(text_send.array_send <= 0 ||text_send.array_send > 25){
+                              console.log(`You can't send more than 20 messages or less than 0.`);
+                              bot_s();
+                              return;
+                            }
+                                      await  bots.forEach((bot)=>{bot.spamPM(text_send.ch_id, text_send.text, text_send.array_send);});
+                                  bot_s();
+                                        break; 		
       case "react":
         const reactions = await prompts([
           {
